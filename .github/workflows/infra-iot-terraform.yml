@@ -31,14 +31,14 @@ jobs:
         run: terraform fmt -check
 
       - name: Terraform Init
-        run: terraform -chdir=infra/${{ matrix.environment }} init
+        run: terraform -chdir=terraform/${{ matrix.environment }} init
 
       - name: Terraform Validate
-        run: terraform -chdir=infra/${{ matrix.environment }} validate
+        run: terraform -chdir=terraform/${{ matrix.environment }} validate
 
       - name: Terraform Plan
-        run: terraform -chdir=infra/${{ matrix.environment }} plan
+        run: terraform -chdir=terraform/${{ matrix.environment }} plan
 
       - name: Terraform Apply
         if: (github.ref == 'refs/heads/dev' && matrix.environment == 'dev') || (github.ref == 'refs/heads/prod' && matrix.environment == 'prod')
-        run: terraform -chdir=infra/${{ matrix.environment }} apply -auto-approve
+        run: terraform -chdir=terraform/${{ matrix.environment }} apply -auto-approve
