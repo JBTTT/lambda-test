@@ -2,7 +2,7 @@ name: Terraform CI/CD for Lambda SNS
 
 on:
   push:
-    branches: [ "dev", "prod" ]
+    branches: [ "main", "dev", "prod" ]
   pull_request:
 
 jobs:
