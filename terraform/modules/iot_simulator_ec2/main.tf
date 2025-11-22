@@ -4,7 +4,7 @@ data "aws_vpc" "default" {
 
 data "aws_subnets" "default" {
   filter {
-    name   = "cet11-grp1"
+    name   = "vpc-id"
     values = [data.aws_vpc.default.id]
   }
 }

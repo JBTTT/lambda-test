@@ -22,7 +22,7 @@ resource "aws_iam_role_policy_attachment" "lambda_basic" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-resource "aws_lambda_function" "alert_lambda" {
+resource "aws_lambda_function" "iot_handler" {
   function_name = "${var.name_prefix}-alert-lambda"
   filename      = data.archive_file.lambda_zip.output_path
   handler       = "index.handler"
@@ -40,7 +40,7 @@ resource "aws_sns_topic_subscription" "email_sub" {
   endpoint  = var.alert_email
 }
 
-resource "aws_cloudwatch_event_rule" "event_rule" {
+resource "aws_cloudwatch_event_rule" "iot_rule" {
   name        = "${var.name_prefix}-event"
   description = "Triggers Lambda"
   event_pattern = jsonencode({
