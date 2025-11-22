@@ -9,7 +9,7 @@ terraform {
 }
 
 provider "aws" {
-  region = "ap-southeast-1"
+  region = "us-east-1"
 }
 
 ##############################
@@ -17,7 +17,7 @@ provider "aws" {
 ##############################
 
 resource "aws_sns_topic" "alert_topic" {
-  name = "event-alert-topic"
+  name = "cet11-grp1-event-alert-topic"
 }
 
 resource "aws_sns_topic_subscription" "email_sub" {
@@ -31,7 +31,7 @@ resource "aws_sns_topic_subscription" "email_sub" {
 ##############################
 
 resource "aws_iam_role" "lambda_exec" {
-  name = "lambda-alert-role"
+  name = "cet11-grp1-lambda-alert-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -96,7 +96,7 @@ resource "aws_lambda_function" "alert_lambda" {
 
 # Sample rule: trigger when EC2 instance changes state
 resource "aws_cloudwatch_event_rule" "ec2_state_change" {
-  name        = "ec2-state-change-alert"
+  name        = "cet11-grp1-ec2-state-change-alert"
   description = "Triggers lambda when EC2 instance state changes"
 
   event_pattern = jsonencode({
