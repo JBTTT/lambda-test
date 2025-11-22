@@ -1,27 +1,90 @@
-data "aws_vpc" "default" {
-  default = true
-}
+############################################################
+# VPC CREATION
+############################################################
 
-data "aws_subnets" "default" {
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.default.id]
+resource "aws_vpc" "iot_vpc" {
+  cidr_block           = "10.20.0.0/16"
+  enable_dns_support   = true
+  enable_dns_hostnames = true
+
+  tags = {
+    Name = "${var.name_prefix}-iot-vpc"
   }
 }
+
+############################################################
+# SUBNET
+############################################################
+
+resource "aws_subnet" "iot_subnet" {
+  vpc_id                  = aws_vpc.iot_vpc.id
+  cidr_block              = "10.20.1.0/24"
+  availability_zone       = "${var.region}a"
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name = "${var.name_prefix}-iot-subnet"
+  }
+}
+
+############################################################
+# INTERNET GATEWAY
+############################################################
+
+resource "aws_internet_gateway" "iot_igw" {
+  vpc_id = aws_vpc.iot_vpc.id
+
+  tags = {
+    Name = "${var.name_prefix}-iot-igw"
+  }
+}
+
+############################################################
+# ROUTE TABLE AND ROUTE
+############################################################
+
+resource "aws_route_table" "iot_rt" {
+  vpc_id = aws_vpc.iot_vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.iot_igw.id
+  }
+
+  tags = {
+    Name = "${var.name_prefix}-iot-rt"
+  }
+}
+
+resource "aws_route_table_association" "iot_rta" {
+  subnet_id      = aws_subnet.iot_subnet.id
+  route_table_id = aws_route_table.iot_rt.id
+}
+
+############################################################
+# SECURITY GROUP
+############################################################
 
 resource "aws_security_group" "sim_sg" {
   name        = "${var.name_prefix}-iot-sim-sg"
   description = "Security group for IoT simulator EC2"
-  vpc_id      = data.aws_vpc.default.id
+  vpc_id      = aws_vpc.iot_vpc.id
 
-  # allow outbound only
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  tags = {
+    Name = "${var.name_prefix}-iot-sg"
+  }
 }
+
+############################################################
+# IAM ROLE + INSTANCE PROFILE
+############################################################
 
 resource "aws_iam_role" "ec2_role" {
   name = "${var.name_prefix}-iot-sim-ec2-role"
@@ -60,10 +123,13 @@ resource "aws_iam_instance_profile" "ec2_profile" {
   role = aws_iam_role.ec2_role.name
 }
 
+############################################################
+# SELECT AMI
+############################################################
+
 data "aws_ami" "amazon_linux" {
   most_recent = true
-
-  owners = ["amazon"]
+  owners      = ["amazon"]
 
   filter {
     name   = "name"
@@ -71,58 +137,6 @@ data "aws_ami" "amazon_linux" {
   }
 }
 
-resource "aws_instance" "iot_simulator" {
-  ami                    = data.aws_ami.amazon_linux.id
-  instance_type          = var.instance_type
-  subnet_id              = data.aws_subnets.default.ids[0]
-  vpc_security_group_ids = [aws_security_group.sim_sg.id]
-  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
-
-  tags = {
-    Name = "${var.name_prefix}-iot-simulator"
-  }
-
-  user_data = <<-EOF
-    #!/bin/bash
-    yum update -y
-    yum install -y python3 pip
-
-    pip3 install boto3 -q
-
-    cat > /opt/iot_simulator.py << 'PYEOF'
-    import boto3
-    import json
-    import random
-    import time
-
-    REGION = "${var.region}"
-    SOURCE = "cet11.grp1.iot"
-    DETAIL_TYPE = "iot.telemetry"
-
-    client = boto3.client("events", region_name=REGION)
-
-    def send_event():
-        event = {
-            "Source": SOURCE,
-            "DetailType": DETAIL_TYPE,
-            "Detail": json.dumps({
-                "device_id": "sensor-01",
-                "temperature": round(random.uniform(20.0, 40.0), 2),
-                "humidity": round(random.uniform(40.0, 90.0), 2)
-            }),
-        }
-        response = client.put_events(Entries=[event])
-        print("Sent IoT event:", event, "Response:", response)
-
-    if __name__ == "__main__":
-        while True:
-            try:
-                send_event()
-            except Exception as e:
-                print("Error sending event:", e)
-            time.sleep(10)
-    PYEOF
-
-    nohup python3 /opt/iot_simulator.py > /var/log/iot_simulator.log 2>&1 &
-  EOF
-}
+############################################################
+# EC2 INSTANCE WITH SIMULATOR SCRIPT
+##########
