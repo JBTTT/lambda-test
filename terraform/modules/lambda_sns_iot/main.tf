@@ -23,7 +23,7 @@ resource "aws_iam_role_policy_attachment" "lambda_basic" {
 }
 
 resource "aws_lambda_function" "iot_handler" {
-  function_name = "${var.name_prefix}-alert-lambda"
+  function_name = "${var.name_prefix}-iot_handler"
   filename      = data.archive_file.lambda_zip.output_path
   handler       = "index.handler"
   runtime       = "nodejs18.x"
@@ -49,7 +49,7 @@ resource "aws_cloudwatch_event_rule" "iot_rule" {
 }
 
 resource "aws_cloudwatch_event_target" "event_target" {
-  rule      = aws_cloudwatch_event_rule.event_rule.name
+  rule      = aws_cloudwatch_event_rule.iot_rule.name
   target_id = "lambda-target"
   arn       = aws_lambda_function.alert_lambda.arn
 }
