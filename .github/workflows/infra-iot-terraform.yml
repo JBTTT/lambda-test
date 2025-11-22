@@ -39,6 +39,13 @@ jobs:
       - name: Terraform Plan
         run: terraform -chdir=terraform/${{ matrix.environment }} plan
 
+      #- name: Terraform Apply
+      # if: (github.ref == 'refs/heads/dev' && matrix.environment == 'dev') || (github.ref == 'refs/heads/prod' && matrix.environment == 'prod')
+      # run: terraform -chdir=terraform/${{ matrix.environment }} apply -auto-approve
+
       - name: Terraform Apply
-        if: (github.ref == 'refs/heads/dev' && matrix.environment == 'dev') || (github.ref == 'refs/heads/prod' && matrix.environment == 'prod')
+        if: |
+          (github.ref == 'refs/heads/dev' && matrix.environment == 'dev') ||
+          (github.ref == 'refs/heads/prod' && matrix.environment == 'prod')
         run: terraform -chdir=terraform/${{ matrix.environment }} apply -auto-approve
+
