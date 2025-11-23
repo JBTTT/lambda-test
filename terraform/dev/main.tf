@@ -20,7 +20,6 @@ module "lambda_sns_iot" {
   source      = "../modules/lambda_sns_iot"
   name_prefix = "cet11-grp1-prod"
   alert_email = "perseverancejb@hotmail.com"
-  region      = var.region
 }
 
 module "iot_simulator_ec2" {
