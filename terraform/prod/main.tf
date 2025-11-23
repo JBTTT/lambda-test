@@ -22,3 +22,4 @@ module "iot_simulator_ec2" {
   name_prefix = "cet11-grp1-prod"
   region      = "us-east-1"
 }
+
