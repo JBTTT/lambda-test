@@ -3,7 +3,7 @@ import json
 import random
 import time
 
-client = boto3.client("events", region_name="${var.region}")
+client = boto3.client("events", region_name="us-east-1")
 
 while True:
     event = {
