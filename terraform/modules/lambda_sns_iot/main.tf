@@ -1,11 +1,11 @@
 data "archive_file" "lambda_zip" {
   type        = "zip"
   source_dir  = "${path.module}/../../lambda_src_iot"
-  output_path = "${path.module}/lambda_iot.zip"
+  output_path = "${path.module}/lambda.zip"
 }
 
 resource "aws_sns_topic" "alert_topic" {
-  name = "${var.name_prefix}-iot-alert-topic"
+  name = "${var.name_prefix}-iot-topic"
 }
 
 resource "aws_sns_topic_subscription" "email_sub" {
@@ -15,25 +15,25 @@ resource "aws_sns_topic_subscription" "email_sub" {
 }
 
 resource "aws_iam_role" "lambda_role" {
-  name = "${var.name_prefix}-iot-lambda-role"
+  name = "${var.name_prefix}-lambda-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
+      Action = "sts:AssumeRole",
       Effect = "Allow",
       Principal = { Service = "lambda.amazonaws.com" },
-      Action = "sts:AssumeRole"
     }]
   })
 }
 
-resource "aws_iam_role_policy_attachment" "lambda_basic" {
+resource "aws_iam_role_policy_attachment" "lambda_logs" {
   role       = aws_iam_role.lambda_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-resource "aws_iam_role_policy" "lambda_sns_policy" {
-  name = "${var.name_prefix}-lambda-sns-policy"
+resource "aws_iam_role_policy" "sns_policy" {
+  name = "${var.name_prefix}-sns-policy"
   role = aws_iam_role.lambda_role.id
 
   policy = jsonencode({
@@ -41,19 +41,20 @@ resource "aws_iam_role_policy" "lambda_sns_policy" {
     Statement = [{
       Effect   = "Allow",
       Action   = ["sns:Publish"],
-      Resource = [aws_sns_topic.alert_topic.arn]
+      Resource = aws_sns_topic.alert_topic.arn
     }]
   })
 }
 
-# ⭐ THIS IS THE LAMBDA RESOURCE NAME YOU MUST USE
 resource "aws_lambda_function" "alert_lambda" {
   function_name = "${var.name_prefix}-iot-handler"
-  filename      = data.archive_file.lambda_zip.output_path
-  handler       = "index.handler"
   runtime       = "python3.11"
-  role          = aws_iam_role.lambda_role.arn
+  handler       = "index.handler"
+
+  filename         = data.archive_file.lambda_zip.output_path
   source_code_hash = filebase64sha256(data.archive_file.lambda_zip.output_path)
+
+  role = aws_iam_role.lambda_role.arn
 
   environment {
     variables = {
@@ -62,25 +63,24 @@ resource "aws_lambda_function" "alert_lambda" {
   }
 }
 
-# ⭐ THIS IS THE EVENT RULE NAME YOU MUST USE
 resource "aws_cloudwatch_event_rule" "event_rule" {
-  name        = "${var.name_prefix}-iot-event"
-  description = "Simulated IoT device events"
+  name        = "${var.name_prefix}-iot-rule"
+  description = "IoT Telemetry Rule"
 
   event_pattern = jsonencode({
-    "source": ["cet11.grp1.iot"],
-    "detail-type": ["iot.telemetry"]
+    source      = ["cet11.grp1.iot"],
+    detail-type = ["iot.telemetry"]
   })
 }
 
 resource "aws_cloudwatch_event_target" "event_target" {
   rule      = aws_cloudwatch_event_rule.event_rule.name
-  target_id = "lambda-iot-target"
+  target_id = "lambda"
   arn       = aws_lambda_function.alert_lambda.arn
 }
 
 resource "aws_lambda_permission" "allow_events" {
-  statement_id  = "AllowExecutionFromEventBridge"
+  statement_id  = "AllowExecution"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.alert_lambda.function_name
   principal     = "events.amazonaws.com"
