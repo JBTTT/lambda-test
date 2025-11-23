@@ -8,7 +8,7 @@ terraform {
 }
 
 provider "aws" {
-  region = var.region
+  region      = "us-east-1"
 }
 
 module "lambda_sns_iot" {
@@ -20,5 +20,5 @@ module "lambda_sns_iot" {
 module "iot_simulator_ec2" {
   source      = "../modules/iot_simulator_ec2"
   name_prefix = "cet11-grp1-prod"
-  region = var.region
+  region      = "us-east-1"
 }
