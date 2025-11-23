@@ -7,11 +7,6 @@ terraform {
   }
 }
 
-variable "region" {
-  description = "AWS region for deployment"
-  type        = string
-}
-
 provider "aws" {
   region = var.region
 }
@@ -27,4 +22,3 @@ module "iot_simulator_ec2" {
   name_prefix = "cet11-grp1-prod"
   region      = var.region
 }
-
