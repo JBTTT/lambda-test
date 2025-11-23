@@ -7,23 +7,18 @@ terraform {
   }
 }
 
-variable "region" {
-  description = "AWS region for deployment"
-  type        = string
-}
-
 provider "aws" {
   region = var.region
 }
 
 module "lambda_sns_iot" {
   source      = "../modules/lambda_sns_iot"
-  name_prefix = "cet11-grp1-prod"
+  name_prefix = "cet11-grp1-dev"
   alert_email = "perseverancejb@hotmail.com"
 }
 
 module "iot_simulator_ec2" {
   source      = "../modules/iot_simulator_ec2"
-  name_prefix = "cet11-grp1-prod"
+  name_prefix = "cet11-grp1-dev"
   region      = var.region
 }
